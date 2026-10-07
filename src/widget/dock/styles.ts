@@ -11,7 +11,16 @@ export const TERMINAL_CSS = `
   background-color: var(--oac-term-bg, #0b1017);
   color: var(--oac-term-text, #e1e3e6);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Only the draggable chrome refuses text selection; panel content stays selectable. */
+.oac-dock-panel-header,
+.oac-dock-tabs-header,
+.oac-dock-floating-header,
+.oac-dock-splitter,
+.oac-dock-resize-handle {
   user-select: none;
+  -webkit-user-select: none;
 }
 
 .oac-dock-tree {
@@ -56,9 +65,16 @@ export const TERMINAL_CSS = `
   z-index: 10;
   transition: background-color 150ms ease;
   outline: none;
+  touch-action: none;
+}
+
+.oac-dock-splitter:focus-visible {
+  outline: 2px solid var(--oac-term-accent, #38bdf8);
+  outline-offset: -1px;
 }
 
 .oac-dock-splitter:hover,
+.oac-dock-splitter:focus-visible,
 .oac-dock-splitter.is-dragging {
   background-color: var(--oac-term-accent, #38bdf8);
 }
@@ -355,6 +371,8 @@ export const TERMINAL_CSS = `
   font-weight: 500;
   color: var(--oac-term-text, #d1d4dc);
   cursor: grab;
+  /* Pointer drags, not touch scrolls: without it a touch drag ends in pointercancel. */
+  touch-action: none;
 }
 
 .oac-dock-floating-header:active {
@@ -385,6 +403,7 @@ export const TERMINAL_CSS = `
 .oac-dock-resize-handle {
   position: absolute;
   z-index: 20;
+  touch-action: none;
 }
 
 .oac-dock-resize-handle--n { top: 0; left: 0; right: 0; height: 6px; cursor: n-resize; }
@@ -487,6 +506,7 @@ export const TERMINAL_CSS = `
 
 .oac-dom-btn--sell:hover { background-color: #f44336; }
 
+.oac-dom-btn--secondary,
 .oac-dom-btn--cancel,
 .oac-dom-btn--flatten {
   background-color: var(--oac-term-control, #2b303c);
@@ -498,6 +518,7 @@ export const TERMINAL_CSS = `
   font-size: 10px;
 }
 
+.oac-dom-btn--secondary:hover,
 .oac-dom-btn--cancel:hover,
 .oac-dom-btn--flatten:hover {
   background-color: var(--oac-term-hover, #363d4c);
@@ -648,10 +669,10 @@ export const TERMINAL_CSS = `
 .oac-dom-row td { height: 22px; padding-top: 0; padding-bottom: 0; white-space: nowrap; overflow: hidden; }
 .oac-dom-summary { flex: none; padding: 8px; border-top: 1px solid var(--oac-term-border-strong, #253245); color: var(--oac-term-muted, #8fa5bb); font-size: 10px; font-variant-numeric: tabular-nums; }
 .oac-dom-select { appearance: none; padding-right: 18px; background-image: linear-gradient(45deg, transparent 50%, var(--oac-term-muted, #8fa5bb) 50%), linear-gradient(135deg, var(--oac-term-muted, #8fa5bb) 50%, transparent 50%); background-position: calc(100% - 10px) 50%, calc(100% - 6px) 50%; background-size: 4px 4px; background-repeat: no-repeat; }
-.oac-dom-panel button:focus-visible, .oac-dom-select:focus-visible, .oac-dock-tab:focus-visible, .oac-dock-link-badge:focus-visible { outline: 2px solid var(--oac-term-accent, #38bdf8); outline-offset: -2px; }
+.oac-dom-panel button:focus-visible, .oac-dom-select:focus-visible, .oac-dock-tab-label:focus-visible, .oac-dock-link-badge:focus-visible { outline: 2px solid var(--oac-term-accent, #38bdf8); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { .oac-terminal *, .oac-dom-panel * { transition: none; } }
 .oac-chart-tools { position: absolute; right: 12px; bottom: 42px; z-index: 5; display: flex; gap: 4px; }
-.oac-chart-tools button { background: var(--oac-term-control, #192b3d); color: var(--oac-term-text-secondary, #c6d9eb); border: 1px solid var(--oac-term-control-border, #34465d); border-radius: 4px; padding: 5px 8px; cursor: pointer; font: 11px inherit; }
+.oac-chart-tools button { background: var(--oac-term-control, #192b3d); color: var(--oac-term-text-secondary, #c6d9eb); border: 1px solid var(--oac-term-control-border, #34465d); border-radius: 4px; padding: 5px 8px; cursor: pointer; font-size: 11px; font-family: inherit; }
 .oac-chart-tools button:focus-visible { outline: 2px solid var(--oac-term-accent, #38bdf8); }
 
 /*

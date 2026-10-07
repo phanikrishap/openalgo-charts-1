@@ -34,7 +34,7 @@ export class TerminalApp {
     this._api = createDockview(this._container, {
       createComponent: (options) => {
         if (options.name === 'chart_panel') {
-          return new ChartPanel(this._feed);
+          return new ChartPanel(this._feed, () => this.saveLayout());
         }
         throw new Error(`Unsupported component type: ${options.name}`);
       }

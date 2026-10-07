@@ -51,7 +51,8 @@ export interface OrderTicketOptions extends TradingPanelUiOptions {
   linkGroup?: LinkColor | null;
   /** Visible execution context, such as the selected account and live or paper mode. */
   label: string;
-  draft?: { qty: number; type: 'MARKET' | 'LIMIT'; price?: number };
+  /** Prefilled fields; `side` names the action the draft was prepared for (a depth click). */
+  draft?: { qty: number; type: 'MARKET' | 'LIMIT'; price?: number; side?: 'BUY' | 'SELL' };
   placeOrder?(request: PlaceRequest): Promise<PlaceResult>;
   /** Supply only when the provider supports native brackets. */
   bracketSupport?(): { supported: boolean; reason?: string };
@@ -182,6 +183,14 @@ export function createOrderTicketPanel(options: OrderTicketOptions): TerminalPan
       const unsubscribe = options.account?.subscribe(state => { const changed = state.generation !== generation; generation = state.generation; sync(changed); });
       const unsubscribeCapabilities = options.subscribeCapabilities?.(() => sync());
       root.append(actions, status); host.appendChild(root); update = sync; sync();
+      const draftSide = options.draft?.side;
+      if (draftSide === 'BUY' || draftSide === 'SELL') {
+        // Never submitted from here: the prepared side is announced and its button focused.
+        const label = draftSide === 'BUY' ? text(options, 'buy', 'Buy') : text(options, 'sell', 'Sell');
+        status.textContent = text(options, 'prepared', `Prepared to ${label.toLowerCase()}. Review, then press ${label}.`);
+        root.dataset.draftSide = draftSide;
+        if (host.isConnected) buttons[draftSide === 'BUY' ? 0 : 1]?.focus();
+      }
       return { onTitleChange(callback) { titleChange = callback; }, destroy() { destroyed = true; update = undefined; unsubscribe?.(); unsubscribeCapabilities?.(); removeTheme(); form.destroy(); root.remove(); } };
     },
   };

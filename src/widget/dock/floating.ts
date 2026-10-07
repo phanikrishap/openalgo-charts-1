@@ -17,6 +17,8 @@ export interface FloatingPanelOptions {
   onLinkGroupChange?(panelId: string, group: TerminalPanel['linkGroup']): void;
   onClose(panelId: string): void;
   onBoundsChange(state: FloatingPanelState): void;
+  /** A pointer went down anywhere in the window: raise it above the other floating windows. */
+  onActivate?(panelId: string): void;
   onDragMove?(clientX: number, clientY: number): void;
   onDragEnd?(clientX: number, clientY: number): void;
 }
@@ -152,6 +154,7 @@ export class FloatingPanelWindow {
 
   private bindInteractions(header: HTMLElement): void {
     this._el.addEventListener('pointerdown', () => {
+      this._opts.onActivate?.(this._opts.panel.id);
       this._opts.onBoundsChange(this._state);
     });
 
@@ -180,8 +183,12 @@ export class FloatingPanelWindow {
       const dx = e.clientX - this._dragStartX;
       const dy = e.clientY - this._dragStartY;
 
-      this._state.x = Math.max(0, this._initialLeft + dx);
-      this._state.y = Math.max(0, this._initialTop + dy);
+      // Kept inside the workspace (which clips overflow) so the titlebar stays reachable.
+      const { clientWidth, clientHeight } = this._opts.container;
+      const maxX = clientWidth > 0 ? Math.max(0, clientWidth - this._state.width) : Infinity;
+      const maxY = clientHeight > 0 ? Math.max(0, clientHeight - this._state.height) : Infinity;
+      this._state.x = Math.min(Math.max(0, this._initialLeft + dx), maxX);
+      this._state.y = Math.min(Math.max(0, this._initialTop + dy), maxY);
       this._el.style.left = `${this._state.x}px`;
       this._el.style.top = `${this._state.y}px`;
 

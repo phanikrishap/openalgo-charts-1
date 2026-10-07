@@ -23,9 +23,12 @@ export class ChartPanel implements IDockviewPanelRenderer {
   private _resizeObserver: ResizeObserver | null = null;
 
   private readonly _defaultFeed?: DataFeed | undefined;
+  private readonly _onChange?: (() => void) | undefined;
 
-  constructor(defaultFeed?: DataFeed) {
+  /** `onChange` runs after the chart's symbol or interval changes, so the host can save its layout. */
+  constructor(defaultFeed?: DataFeed, onChange?: () => void) {
     this._defaultFeed = defaultFeed;
+    this._onChange = onChange;
     this._element = document.createElement('div');
     this._element.style.width = '100%';
     this._element.style.height = '100%';
@@ -93,6 +96,8 @@ export class ChartPanel implements IDockviewPanelRenderer {
       config.interval = intv;
       api.updateParameters({ symbol: sym, interval: intv });
       api.setTitle(`${sym} (${intv})`);
+      // A parameter change is no layout change, so the host's layout listener would miss it.
+      this._onChange?.();
     };
     this._widget.chart.on('symbol_change', updateTitle);
     this._widget.chart.on('interval_change', updateTitle);

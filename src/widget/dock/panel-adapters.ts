@@ -108,7 +108,7 @@ export function createChartPanel(options: ChartPanelOptions): ChartTerminalPanel
         onLinkUpdate(ctx: LinkContext) {
           if (widgetInstance) {
             if (ctx.symbol) {
-              widgetInstance.setSymbol(ctx.symbol, ctx.exchange ?? '');
+              widgetInstance.setSymbol(ctx.symbol, ctx.exchange); // none keeps the chart's exchange
             }
             if (ctx.interval) {
               widgetInstance.setInterval(ctx.interval);
@@ -144,7 +144,7 @@ export function createChartPanel(options: ChartPanelOptions): ChartTerminalPanel
       if (ctx.symbol) options.symbol = ctx.symbol;
       if (ctx.interval) options.interval = ctx.interval;
       if (widgetInstance) {
-        if (ctx.symbol) widgetInstance.setSymbol(ctx.symbol, ctx.exchange ?? '');
+        if (ctx.symbol) widgetInstance.setSymbol(ctx.symbol, ctx.exchange);
         if (ctx.interval) widgetInstance.setInterval(ctx.interval);
       }
     },

@@ -43,6 +43,19 @@ import type {
   TerminalWorkspace,
 } from './types';
 
+/** One tab: the chrome item (drag, badge, close) and the `role="tab"` label inside it. */
+interface TabElements { item: HTMLElement; tab: HTMLElement }
+
+let nextTabsViewId = 0;
+
+/** Selection state of a tab, mirrored on the tab panel that it labels. */
+function selectTab({ item, tab }: TabElements, selected: boolean, body: HTMLElement): void {
+  item.classList.toggle('is-active', selected);
+  tab.setAttribute('aria-selected', String(selected));
+  tab.setAttribute('tabindex', selected ? '0' : '-1');
+  if (selected) body.setAttribute('aria-labelledby', tab.id);
+}
+
 export class TerminalDockController implements TerminalWorkspace {
   private readonly _doc: Document;
   private readonly _root: HTMLElement;
@@ -71,7 +84,7 @@ export class TerminalDockController implements TerminalWorkspace {
   private readonly _resizeFrame: FrameTask;
   private readonly _resizeQueue = new Map<string, { width: number; height: number } | null>();
   private readonly _lastSizes = new Map<string, { width: number; height: number }>();
-  private readonly _tabViews = new Map<string, { body: HTMLElement; tabs: Map<string, HTMLElement> }>();
+  private readonly _tabViews = new Map<string, { body: HTMLElement; tabs: Map<string, TabElements> }>();
   readonly ready: Promise<void>;
   private _loading = false;
   private _changedWhileLoading = false;
@@ -333,6 +346,10 @@ export class TerminalDockController implements TerminalWorkspace {
       onClose: (pId) => {
         this.removePanel(pId);
       },
+      onActivate: (pId) => {
+        const target = this._floatingWindows.get(pId);
+        if (target && target.state.zIndex < this._topZIndex) target.bringToFront(++this._topZIndex);
+      },
       onBoundsChange: () => {
         this.saveState();
       },
@@ -409,11 +426,7 @@ export class TerminalDockController implements TerminalWorkspace {
       node.active = panelId;
       const view = this._tabViews.get(node.id), panel = this._panels.get(panelId);
       if (view && panel) {
-        for (const [id, tab] of view.tabs) {
-          tab.classList.toggle('is-active', id === panelId);
-          tab.setAttribute('aria-selected', String(id === panelId));
-          tab.setAttribute('tabindex', id === panelId ? '0' : '-1');
-        }
+        for (const [id, tab] of view.tabs) selectTab(tab, id === panelId, view.body);
         while (view.body.firstChild) view.body.removeChild(view.body.firstChild);
         view.body.appendChild(this.getOrCreatePanelHost(panel));
         if (panel.type === 'dom') this._lastSizes.delete(panelId);
@@ -466,6 +479,8 @@ export class TerminalDockController implements TerminalWorkspace {
   }
 
   public loadPreset(presetName: string): boolean {
+    // Own keys only: an inherited name such as `toString` is not a preset.
+    if (!Object.prototype.hasOwnProperty.call(TERMINAL_PRESETS, presetName)) return false;
     const preset = TERMINAL_PRESETS[presetName];
     if (!preset) return false;
 
@@ -583,6 +598,7 @@ export class TerminalDockController implements TerminalWorkspace {
         this._layout = null;
       }
       this.render();
+      this.saveState();
     }
   }
 
@@ -660,7 +676,10 @@ export class TerminalDockController implements TerminalWorkspace {
     this._treeContainer.innerHTML = '';
 
     if (!this._layout) {
-      this._treeContainer.innerHTML = '<div class="oac-dom-empty">Workspace is empty. Add a panel to begin.</div>';
+      const empty = this._doc.createElement('div');
+      empty.className = 'oac-dom-empty';
+      empty.textContent = 'Workspace is empty. Add a panel to begin.';
+      this._treeContainer.appendChild(empty);
       return;
     }
 
@@ -703,7 +722,10 @@ export class TerminalDockController implements TerminalWorkspace {
     container.dataset.panelId = node.panelId;
 
     if (!panel) {
-      container.innerHTML = `<div class="oac-dom-empty">Panel not found (${node.panelId})</div>`;
+      const empty = this._doc.createElement('div');
+      empty.className = 'oac-dom-empty';
+      empty.textContent = `Panel not found (${node.panelId})`;
+      container.appendChild(empty);
       return container;
     }
 
@@ -779,20 +801,33 @@ export class TerminalDockController implements TerminalWorkspace {
     header.setAttribute('role', 'tablist');
 
     const activePanelId = node.active || (node.panels[0] ?? '');
-    const tabs = new Map<string, HTMLElement>();
+    const tabs = new Map<string, TabElements>();
+    const viewId = `oac-dock-tabs-${++nextTabsViewId}`;
 
-    for (const panelId of node.panels) {
+    const body = this._doc.createElement('div');
+    body.className = 'oac-dock-tabs-body';
+    body.id = `${viewId}-panel`;
+    body.setAttribute('role', 'tabpanel');
+
+    node.panels.forEach((panelId, index) => {
       const panel = this._panels.get(panelId);
-      if (!panel) continue;
+      if (!panel) return;
 
-      const tab = this._doc.createElement('div');
-      tab.className = 'oac-dock-tab';
-      tab.dataset.panelId = panelId;
+      // The chrome item carries the drag, the link badge and the close button; only the label
+      // is the tab, because a tab's descendants are presentational and would hide the buttons.
+      const item = this._doc.createElement('div');
+      item.className = 'oac-dock-tab';
+      item.dataset.panelId = panelId;
+      item.setAttribute('role', 'presentation');
+
+      const tab = this._doc.createElement('span');
+      tab.className = 'oac-dock-tab-label';
+      tab.id = `${viewId}-tab-${index}`;
       tab.setAttribute('role', 'tab');
-      tab.setAttribute('aria-selected', String(panelId === activePanelId));
-      tab.setAttribute('tabindex', panelId === activePanelId ? '0' : '-1');
-      tabs.set(panelId, tab);
-      if (panelId === activePanelId) tab.classList.add('is-active');
+      tab.setAttribute('aria-controls', body.id);
+      const elements = { item, tab };
+      tabs.set(panelId, elements);
+      selectTab(elements, panelId === activePanelId, body);
 
       const linkBadge = this._linkHub.renderLinkBadge(
         panel.id,
@@ -806,43 +841,42 @@ export class TerminalDockController implements TerminalWorkspace {
       const title = this._doc.createElement('span');
       title.className = 'oac-dock-title-text';
       title.textContent = panel.title;
+      tab.appendChild(title);
 
       const close = this._doc.createElement('button');
       close.type = 'button';
       close.className = 'oac-dock-tab-close';
       close.textContent = 'x';
+      close.setAttribute('aria-label', `Close ${panel.title}`);
       close.addEventListener('click', (e) => {
         e.stopPropagation();
         this.removePanel(panelId);
       });
 
-      tab.append(linkBadge, title, close);
+      item.append(linkBadge, tab, close);
 
-      tab.addEventListener('click', () => {
+      item.addEventListener('click', () => {
         this.activateTab(panelId);
       });
       tab.addEventListener('keydown', (event) => {
-        const index = node.panels.indexOf(panelId);
+        const position = node.panels.indexOf(panelId);
         let next: string | undefined;
-        if (event.key === 'ArrowRight') next = node.panels[(index + 1) % node.panels.length];
-        else if (event.key === 'ArrowLeft') next = node.panels[(index + node.panels.length - 1) % node.panels.length];
+        if (event.key === 'ArrowRight') next = node.panels[(position + 1) % node.panels.length];
+        else if (event.key === 'ArrowLeft') next = node.panels[(position + node.panels.length - 1) % node.panels.length];
         else if (event.key === 'Home') next = node.panels[0];
         else if (event.key === 'End') next = node.panels[node.panels.length - 1];
         else if (event.key === 'Enter' || event.key === ' ') next = panelId;
         if (!next) return;
         event.preventDefault();
         this.activateTab(next);
-        tabs.get(next)?.focus();
+        tabs.get(next)?.tab.focus();
       });
 
-      this.bindHeaderDrag(tab, panel.id, panel.title);
+      this.bindHeaderDrag(item, panel.id, panel.title);
 
-      header.appendChild(tab);
-    }
+      header.appendChild(item);
+    });
 
-    const body = this._doc.createElement('div');
-    body.className = 'oac-dock-tabs-body';
-    body.setAttribute('role', 'tabpanel');
     this._tabViews.set(node.id, { body, tabs });
 
     const activePanel = this._panels.get(activePanelId);
@@ -963,10 +997,12 @@ export class TerminalDockController implements TerminalWorkspace {
   }
 
   private updatePanelTitleInDom(panelId: string, newTitle: string): void {
-    const pane = this._root.querySelector(`.oac-dock-panel[data-panel-id="${panelId}"] .oac-dock-title-text`);
-    if (pane) pane.textContent = newTitle;
-    const tab = this._root.querySelector(`.oac-dock-tab[data-panel-id="${panelId}"] .oac-dock-title-text`);
-    if (tab) tab.textContent = newTitle;
+    // Matched by dataset, not an attribute selector: a panel ID may hold any character.
+    for (const owner of this._root.querySelectorAll<HTMLElement>('.oac-dock-panel, .oac-dock-tab')) {
+      if (owner.dataset.panelId !== panelId) continue;
+      const title = owner.querySelector('.oac-dock-title-text');
+      if (title) title.textContent = newTitle;
+    }
     const floatWin = this._floatingWindows.get(panelId);
     if (floatWin) floatWin.setTitle(newTitle);
   }

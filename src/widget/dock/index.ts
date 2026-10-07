@@ -8,7 +8,7 @@
 
 export { createTerminalWorkspace, TerminalDockController } from './controller';
 export { StandaloneDomLadder, createStandaloneDomPanel, buildDomRows, ladderCapability, type StandaloneDomPanel } from './dom-panel';
-export { createChartPanel, createSimpleDockPanel } from './panel-adapters';
+export { createChartPanel, createSimpleDockPanel, type ChartPanelOptions, type SimplePanelOptions } from './panel-adapters';
 export { loadTradingPanels } from './trading-loader';
 export { TERMINAL_PRESETS } from './presets';
 export { TERMINAL_STORAGE_KEY, loadTerminalDocument, saveTerminalDocument } from './persist';

@@ -181,7 +181,9 @@
         const sourceId = panel.id.endsWith('_depth') ? panel.id.slice(0, -6) : panel.id;
         const id = `${sourceId}_ticket`;
         const exchange = charts.get(sourceId)?.widget()?.exchange() ?? '';
-        addTool(createTicket(id, symbol, exchange, options.linkGroup, { qty, type: type.toUpperCase(), price }), sourceId);
+        // A new depth click carries a new draft (side, price): replace an open ticket rather than refocus it.
+        if (workspace.getPanel(id)) workspace.removePanel(id);
+        addTool(createTicket(id, symbol, exchange, options.linkGroup, { qty, type: type.toUpperCase(), price, side: side === 'sell' ? 'SELL' : 'BUY' }), sourceId);
         if (!workspace.getPanel('orders_book')) workspace.addPanel(createBook(), id, 'bottom');
       } });
       depthPanels.set(panel.id, { panel, basePrice: options.depth.ltp });
@@ -226,7 +228,6 @@
     const feed = new SampleMarketDataFeed('../dockview/data/');
     const container = document.getElementById('terminal-container');
     let workspace = createTerminalWorkspace(container, {
-      theme: 'dark',
       persist: 'openalgo_terminal_browser_v1',
       createPanel: createSavedPanel,
     });
@@ -260,7 +261,8 @@
       }
       if (info.type === 'orders') return state.kind === 'book' ? createBook(id) : createTicket(id, symbol, state.exchange, info.linkGroup);
       if (info.type === 'watchlist') return { ...createWatchlistDockPanel({ id, context() {
-        const chart = charts.get(state.sourceChart) ?? [...charts.values()].find(panel => panel.widget());
+        // The saved source chart may exist without a mounted widget; fall back to any mounted chart.
+        const chart = [charts.get(state.sourceChart), ...charts.values()].find(panel => panel?.widget());
         if (!chart) throw new Error('A watchlist needs a mounted chart context');
         return chart.widget().context;
       }, watchlist: { store: watchlists, onSelect(instrument) {
@@ -314,8 +316,7 @@
       depthPanels.clear();
       container.innerHTML = '';
       workspace = createTerminalWorkspace(container, {
-        theme: 'dark',
-        persist: 'openalgo_terminal_browser_v1',
+          persist: 'openalgo_terminal_browser_v1',
         createPanel: createSavedPanel,
       });
 

@@ -10,21 +10,9 @@ import { FrameTask } from './frame-task';
 import { DomLadderView } from './ladder-view';
 import { injectTerminalStyles } from './styles';
 import type { MarketDepth } from '../../feed/types';
+import { aggregateDepthRows, depthBucket } from '../../feed/depth-rows';
 import type { TickSchedule } from '../../index';
 import type { DomLadderRow, LinkContext, StandaloneDomOptions, TerminalPanel } from './types';
-
-function scheduleBucket(ticks: TickSchedule, n: number): (p: number) => number {
-  return (p) => {
-    const price = ticks.round(p), { bands } = ticks;
-    if (n === 1 || !Number.isFinite(price)) return price;
-    let i = bands.length - 1;
-    while (i > 0 && price < bands[i]!.from!) i--;
-    const band = bands[i]!;
-    const step = band.tick * n;
-    const lower = band.from ?? -Infinity, upper = bands[i + 1]?.from ?? Infinity;
-    return ticks.round(Math.min(Math.max(Math.round(price / step) * step, lower), upper));
-  };
-}
 
 /**
  * Capability tier from the live market depth payload.
@@ -45,30 +33,8 @@ export function buildDomRows(
   groupBy = 1
 ): DomLadderRow[] {
   if (!depth || (!depth.bids.length && !depth.asks.length)) return [];
-  let bucket: (p: number) => number;
-  if (typeof tickSize === 'number') {
-    const step = tickSize * Math.max(1, groupBy);
-    bucket = (p: number): number => Math.round(Math.round(p / step) * step * 1e8) / 1e8;
-  } else if (tickSize && typeof (tickSize as Partial<TickSchedule>).round === 'function') {
-    const count = groupBy > 1 ? Math.floor(groupBy) : 1;
-    bucket = scheduleBucket(tickSize, count);
-  } else {
-    bucket = (p: number): number => p;
-  }
-  const map = new Map<number, DomLadderRow>();
-  const add = (price: number, qty: number, side: 'bid' | 'ask'): void => {
-    const key = bucket(price);
-    let row = map.get(key);
-    if (!row) {
-      row = { price: key, bidQty: 0, askQty: 0 };
-      map.set(key, row);
-    }
-    if (side === 'bid') row.bidQty += qty;
-    else row.askQty += qty;
-  };
-  for (const b of depth.bids) add(b.price, b.qty, 'bid');
-  for (const a of depth.asks) add(a.price, a.qty, 'ask');
-  return Array.from(map.values()).sort((x, y) => y.price - x.price);
+  // The same row building as the trade tier's ladder; an object without `round` keeps raw prices.
+  return aggregateDepthRows(depth, depthBucket(tickSize, groupBy) ?? ((p: number): number => p));
 }
 
 export class StandaloneDomLadder {

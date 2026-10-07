@@ -2,8 +2,11 @@
  * Drop preview indicator.
  *
  * Renders a semi-transparent blueprint ghost overlay that snaps smoothly
- * to the drop target zone with quick 100ms hardware-accelerated CSS transitions.
+ * to the drop target zone. Only `transform` animates (composited); the size is set
+ * directly so a drag update never animates layout properties.
  */
+
+const TRANSITION = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
 
 export class DockPreviewOverlay {
   private readonly _el: HTMLElement;
@@ -18,14 +21,24 @@ export class DockPreviewOverlay {
     this._el.style.display = 'none';
     this._el.style.zIndex = '9999';
     this._el.style.boxSizing = 'border-box';
-    this._el.style.transition = 'all 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+    this._el.style.left = '0px';
+    this._el.style.top = '0px';
+    this._el.style.willChange = 'transform';
+    this._el.style.transition = TRANSITION;
     parent.appendChild(this._el);
   }
 
   public show(rect: { left: number; top: number; width: number; height: number }): void {
+    const transform = `translate(${Math.round(rect.left)}px, ${Math.round(rect.top)}px)`;
     this._el.style.display = 'block';
-    this._el.style.left = `${Math.round(rect.left)}px`;
-    this._el.style.top = `${Math.round(rect.top)}px`;
+    if (this._visible) this._el.style.transform = transform;
+    else {
+      // Appear in place: only moves between drop zones animate, not one from the origin.
+      this._el.style.transition = 'none';
+      this._el.style.transform = transform;
+      void this._el.offsetWidth;
+      this._el.style.transition = TRANSITION;
+    }
     this._el.style.width = `${Math.max(10, Math.round(rect.width))}px`;
     this._el.style.height = `${Math.max(10, Math.round(rect.height))}px`;
     this._visible = true;

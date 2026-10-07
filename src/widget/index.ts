@@ -167,6 +167,7 @@ export type {
   FloatingPanelState, LinkColor, LinkContext,
   TerminalDocument, TerminalOptions, TerminalPreset,
   StandaloneDomOptions, DomLadderRow, StandaloneDomPanel, SerializedPanelInfo,
+  ChartPanelOptions, SimplePanelOptions,
 } from './dock/index';
 
 

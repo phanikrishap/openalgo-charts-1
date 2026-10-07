@@ -25,12 +25,16 @@ export class DockSplitter {
   private _containerSize = 1;
   private readonly _frame: FrameTask;
 
+  /** The ratio bounds a drag and the arrow keys stop at; Home and End go to them. */
+  static readonly MIN_RATIO = 0.05;
+  static readonly MAX_RATIO = 0.95;
+
   constructor(opts: SplitterOptions) {
     this._opts = opts;
     const doc = opts.document ?? (typeof document !== 'undefined' ? document : (globalThis as unknown as { document: Document }).document);
     this._el = doc.createElement('div');
     this._frame = new FrameTask(doc, () => {
-      this._el.setAttribute('aria-valuenow', String(Math.round(this._opts.currentRatio * 100)));
+      this.syncValue();
       this._opts.onRatioChange(this._opts.currentRatio);
     });
     this._el.className = `oac-dock-splitter oac-dock-splitter--${opts.direction}`;
@@ -40,7 +44,11 @@ export class DockSplitter {
       'aria-orientation',
       opts.direction === 'horizontal' ? 'vertical' : 'horizontal'
     );
-    this._el.setAttribute('aria-valuenow', String(Math.round(opts.currentRatio * 100)));
+    // Named by what it resizes; the value is the first pane's share in percent.
+    this._el.setAttribute('aria-label', opts.direction === 'horizontal' ? 'Resize left and right panes' : 'Resize top and bottom panes');
+    this._el.setAttribute('aria-valuemin', String(DockSplitter.MIN_RATIO * 100));
+    this._el.setAttribute('aria-valuemax', String(DockSplitter.MAX_RATIO * 100));
+    this.syncValue();
 
     const handle = doc.createElement('div');
     handle.className = 'oac-dock-splitter-handle';
@@ -51,6 +59,10 @@ export class DockSplitter {
 
   get element(): HTMLElement {
     return this._el;
+  }
+
+  private syncValue(): void {
+    this._el.setAttribute('aria-valuenow', String(Math.round(this._opts.currentRatio * 100)));
   }
 
   private bindEvents(): void {
@@ -84,7 +96,7 @@ export class DockSplitter {
       const deltaPx = currentPos - this._startPos;
       const deltaRatio = deltaPx / this._containerSize;
 
-      const newRatio = Math.max(0.05, Math.min(0.95, this._startRatio + deltaRatio));
+      const newRatio = Math.max(DockSplitter.MIN_RATIO, Math.min(DockSplitter.MAX_RATIO, this._startRatio + deltaRatio));
       this._opts.currentRatio = newRatio;
       this._frame.schedule();
     };
@@ -108,7 +120,7 @@ export class DockSplitter {
       e.stopPropagation();
       this._opts.currentRatio = 0.5;
       this._frame.cancel();
-      this._el.setAttribute('aria-valuenow', '50');
+      this.syncValue();
       this._opts.onRatioChange(0.5);
       this._opts.onEqualize?.();
       this._opts.onRatioEnd?.();
@@ -119,19 +131,23 @@ export class DockSplitter {
       let ratio = this._opts.currentRatio;
 
       if ((isHorizontal && e.key === 'ArrowLeft') || (!isHorizontal && e.key === 'ArrowUp')) {
-        ratio = Math.max(0.05, ratio - step);
+        ratio = Math.max(DockSplitter.MIN_RATIO, ratio - step);
       } else if ((isHorizontal && e.key === 'ArrowRight') || (!isHorizontal && e.key === 'ArrowDown')) {
-        ratio = Math.min(0.95, ratio + step);
-      } else if (e.key === 'Home' || e.key === 'End') {
-        ratio = 0.5;
+        ratio = Math.min(DockSplitter.MAX_RATIO, ratio + step);
+      } else if (e.key === 'Home') {
+        ratio = DockSplitter.MIN_RATIO;
+      } else if (e.key === 'End') {
+        ratio = DockSplitter.MAX_RATIO;
       } else {
         return;
       }
 
+      // Handled here only: a chart with document-wide shortcuts must not also pan on the key.
       e.preventDefault();
+      e.stopPropagation();
       this._opts.currentRatio = ratio;
       this._frame.cancel();
-      this._el.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
+      this.syncValue();
       this._opts.onRatioChange(ratio);
       this._opts.onRatioEnd?.();
     };
