@@ -25,7 +25,7 @@ Source of truth: `package.json` (`exports`, `sideEffects`, `files`), `rollup.con
 | `openalgo-charts/indicators` | `dist/openalgo-charts.indicators.mjs` | 112 Tier-1 built-ins plus the Tier-2 contract | 43.02 kB / 43.02 kB | **yes**, registers all 112 descriptors |
 | `openalgo-charts/draw` | `dist/openalgo-charts.draw.mjs` | 87 drawing tools including Anchored VWAP and fixed-range Volume Profile, `DrawingController`, `DrawingLinkGroup`, `DrawingLayer` | 58.36 kB / 58.36 kB | **yes**, registers every built-in tool |
 | `openalgo-charts/webgl` | `dist/openalgo-charts.webgl.mjs` | the WebGL2 series backend, `createWebGL2Backend`, `isWebGL2Supported`, `WebGL2Backend`, `GlDevice` | 6.97 kB / 6.97 kB | **yes**, registers the `webgl2` render backend |
-| `openalgo-charts/widget` | `dist/openalgo-charts.widget.mjs` | `createWidget`, the chrome (top bar, rail, status line, toasts), the dialogs, event details, the keymap, the tokens and stylesheet; the only tier that ships DOM. Imports `openalgo-charts/draw` itself | 123.57 kB / 123.57 kB; first-use parts 18.24 kB / 18.24 kB | **yes**, registers the seven dialog mounts with the shell |
+| `openalgo-charts/widget` | `dist/openalgo-charts.widget.mjs` | `createWidget`, the chrome (top bar, rail, status line, toasts), the dialogs, event details, the keymap, the tokens and stylesheet; the only tier that ships DOM. Imports `openalgo-charts/draw` itself | 123.57 kB / 123.65 kB; first-use parts 18.24 kB / 18.24 kB; terminal tools 17.40 kB / 17.45 kB | **yes**, registers the seven dialog mounts with the shell |
 | `openalgo-charts/workspace` | `dist/openalgo-charts.workspace.mjs` | Validated workspace and template documents, `WorkspaceRepository`, revision conflicts and an IndexedDB adapter | 11.73 kB / 11.73 kB | no |
 
 Types resolve per tier: `dist/index.d.ts`, `dist/trade/index.d.ts`, `dist/transform/index.d.ts`, `dist/profile/index.d.ts`, `dist/indicators/index.d.ts`, `dist/draw/index.d.ts`, `dist/webgl/index.d.ts`, `dist/widget/index.d.ts`, `dist/workspace/index.d.ts`.
@@ -160,25 +160,27 @@ Enforced by `npm run size` (`size-limit`, Brotli, `@size-limit/file`), from `.si
 
 | Budget row | Files measured | Limit | Measured |
 |---|---|---|---|
-| Base engine | `openalgo-charts.mjs` | 137.54 kB | 137.53 kB |
-| Base + trade layer | base + `trade.mjs` | 154.42 kB | 154.41 kB |
+| Base engine | `openalgo-charts.mjs` | 137.57 kB | 137.56 kB |
+| Base + trade layer | base + `trade.mjs` | 154.44 kB | 154.44 kB |
 | Indicator tier | `indicators.mjs` | 43.02 kB | 43.02 kB |
 | Draw tier | `draw.mjs` | 58.36 kB | 58.36 kB |
 | Transform tier | `transform.mjs` | 6.07 kB | 6.07 kB |
 | Profile tier | `profile.mjs` | 14.94 kB | 14.94 kB |
 | WebGL2 tier | `webgl.mjs` | 6.97 kB | 6.97 kB |
-| Widget tier | `widget.mjs` | 123.57 kB | 123.57 kB |
+| Widget tier | `widget.mjs` | 123.65 kB | 123.57 kB |
+| Terminal tools | `widget.terminal-<hash>.mjs`, fetched by `loadTerminal()` | 17.45 kB | 17.40 kB |
+| Trading forms | `widget.trading-panels-<hash>.mjs`, fetched by `loadTradingPanels()` | 3.16 kB | 3.13 kB |
 | Widget first-use parts | `widget.<part>-<hash>.mjs`, seven files | 18.24 kB | 18.24 kB |
-| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` | 362.48 kB | 362.48 kB |
+| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` + `widget.terminal-<hash>.mjs` | 379.95 kB | 379.90 kB |
 | Workspace tier | `workspace.mjs` | 11.73 kB | 11.73 kB |
-| Everything | all nine bundles | 419.06 kB | 419.05 kB |
-| Script tags | the nine classic-script files | 430.91 kB | 430.90 kB |
-| Base classic script | `openalgo-charts.standalone.js` | 137.65 kB | 137.65 kB |
-| Widget classic script | `openalgo-charts.widget.standalone.js`, first-use parts inlined | 135.21 kB | 135.21 kB |
+| Everything | all nine bundles + terminal tools (shell parts measured separately) | 439.66 kB | 439.61 kB |
+| Script tags | the nine classic-script files | 448.88 kB | 448.83 kB |
+| Base classic script | `openalgo-charts.standalone.js` | 137.65 kB | 137.55 kB |
+| Widget classic script | `openalgo-charts.widget.standalone.js`, first-use parts inlined | 153.28 kB | 153.23 kB |
 
 Version 2.1.2 raises the full-package budget from 187 KB to 188 KB for the feed, indicator lifecycle and recovery fixes. Version 2.1.3 raises base, widget and widget-terminal ceilings to 68 KB, 37 KB and 157 KB for navigation controls, and the chart-only tree-shaking ceiling to 45 KiB. Version 2.1.6 raises the base, base-plus-trade, widget-terminal and total ceilings
 to 73 KB, 81 KB, 165 KB and 197 KB for shared loading, resilient caching and
-managed study status. Aggregate rows constrain the total independently of individual tier ceilings. The limits in `.size-limit.json` are the budget of record.
+managed study status. Aggregate rows constrain the total independently of individual tier ceilings. The limits in `.size-limit.json` are the budget of record. The current terminal branch splits docking, ladders and their styles into a hashed widget chunk requested by `await loadTerminal()`. No terminal chunk is fetched by a plain widget. The classic-script widget still inlines every part but exposes the same asynchronous loader. The aggregate rows above include the terminal chunk; the seven shell parts remain a separate row.
 
 Version 2.1.7 budgets the shared object inventory and compact Objects panel at
 74 KB base, 82 KB base plus trade, 40 KB widget, 168 KB widget terminal and 200 KB
@@ -311,4 +313,4 @@ Version 2.5.9 is the drawing interaction and replay release: drawings per instru
 
 Version 2.5.10 is the persistence, saved layouts and chart grid release: widget state in IndexedDB, saved layouts and indicator templates, the shortcuts editor, the bottom bar, market phases and session shading, the chart grid to sixteen charts with named link groups, link channels for the chart type and drawings, the chrome icon registry, marker lanes and the label pass. The measured base is 134.69 kB, base plus trade 151.38 kB, indicators 40.43 kB, draw 57.98 kB (the icon registry), profile 14.97 kB, widget 121.36 kB, workspace 11.53 kB (named link groups), the terminal 354.46 kB and all tiers 409.13 kB; the transform, WebGL2 and trade tiers are unchanged. The widget loads the UI a plain widget never opens from seven part files beside it, named by a content hash (`openalgo-charts.widget.<part>-<hash>.mjs`, 18.19 kB together), which a bundler emits as chunks of their own and a host serving `dist/` serves with the tier file from the same release. The chart-only import measures 85.73 KiB: the marker lanes run on every chart with text markers, and the session phases, the shading and the link channels shake out.
 
-Version 2.6.0 is the analysis depth and stricter API release: transforms applied in the chart with studies on the underlying bars, seven built-ins and a timeframe input on 29 of them, symbol search through the OpenAlgo feed, rich event details, the typed event map, a classic script for every tier and `require()` of the ESM files. The measured base is 137.53 kB, base plus trade 154.41 kB, indicators 43.02 kB, transform 6.07 kB, widget 123.57 kB, the terminal 362.48 kB, all tiers 419.05 kB and the nine classic scripts 430.90 kB; the eight tier scripts ship without source maps. The transform runs are installed by `registerSeriesTransform`, so a chart-only import that registers none leaves them out; it measures 87.19 KiB.
+Version 2.6.0 is the analysis depth and stricter API release: transforms applied in the chart with studies on the underlying bars, seven built-ins and a timeframe input on 29 of them, symbol search through the OpenAlgo feed, rich event details, the typed event map, a classic script for every tier and `require()` of the ESM files. The measured base is 137.53 kB, base plus trade 154.41 kB, indicators 43.02 kB, transform 6.07 kB, widget 123.65 kB, the terminal 362.48 kB, all tiers 419.05 kB and the nine classic scripts 430.90 kB; the eight tier scripts ship without source maps. The transform runs are installed by `registerSeriesTransform`, so a chart-only import that registers none leaves them out; it measures 87.19 KiB.
