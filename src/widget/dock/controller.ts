@@ -565,7 +565,10 @@ export class TerminalDockController implements TerminalWorkspace {
 
   private saveState(): void {
     if (this._loading && !this._restoring) this._changedWhileLoading = true;
-    if (this._opts.persist && !this._loading && !this._restoring && !this._pendingDocument && !this._invalidSaved) this._saveFrame.schedule();
+    // Scheduled for a listener as well as for storage: onLayoutChange is how a host that keeps
+    // its own layout state learns of user edits (a closed panel, a dragged splitter).
+    const wanted = !!this._opts.persist || !!this._opts.onLayoutChange;
+    if (wanted && !this._loading && !this._restoring && !this._pendingDocument && !this._invalidSaved) this._saveFrame.schedule();
   }
 
   private reportRestoreError(reason: string): void {
@@ -584,7 +587,8 @@ export class TerminalDockController implements TerminalWorkspace {
   private writeState(): void {
     const doc = this.validDocument(this.saveLayout());
     if (!doc) { this.reportRestoreError('Invalid terminal panel state'); return; }
-    this._storage.set(doc); this._opts.onLayoutChange?.(doc);
+    if (this._opts.persist) this._storage.set(doc);
+    this._opts.onLayoutChange?.(doc);
   }
 
   public async flush(): Promise<void> { this._saveFrame.flush(); await this._storage.shared.flush(); }

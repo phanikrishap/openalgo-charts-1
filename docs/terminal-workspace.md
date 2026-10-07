@@ -165,6 +165,29 @@ supplied context's lifetime. `positions`, `news`, `data`, `objects` and `custom`
 are supported panel types for host adapters; a panel type alone does not provide
 a built-in connected service or trading form.
 
+## Theme the terminal chrome
+
+The terminal ships one look (dark) and no theme switch of its own. Every chrome colour reads a
+`--oac-term-*` custom property and falls back to that dark value, so a host that sets nothing
+sees no change. To match a host theme, set the tokens yourself; set them on `:root` so they also
+reach the drag ghost and link-group picker, which are appended to `<body>`:
+
+```css
+:root {
+  --oac-term-bg: var(--app-background);
+  --oac-term-panel: var(--app-card);
+  --oac-term-text: var(--app-foreground);
+  --oac-term-accent: var(--app-primary);
+}
+```
+
+Tokens: `--oac-term-accent`, `--oac-term-accent-fill`, `--oac-term-bg`, `--oac-term-border`, `--oac-term-border-strong`, `--oac-term-control`, `--oac-term-control-border`, `--oac-term-header`, `--oac-term-hover`, `--oac-term-ltp`, `--oac-term-ltp-fill`, `--oac-term-muted`, `--oac-term-overlay`, `--oac-term-panel`, `--oac-term-popover`, `--oac-term-shadow`, `--oac-term-splitter`, `--oac-term-subheader`, `--oac-term-text`, `--oac-term-text-secondary`, `--oac-term-text-strong`. Buy, sell and depth-heat colours are
+trading semantics and are not tokens. Charts inside panels keep their own theme
+(`widget.setTheme`, `chart.setTheme`).
+
+`onLayoutChange` is called after every layout change (add, dock, float, close, tab, split ratio,
+link group) whether or not `persist` is set, so a host can keep its own copy of the layout.
+
 ## Examples and delivery
 
 Build the repository with `npm run build`, then serve it with

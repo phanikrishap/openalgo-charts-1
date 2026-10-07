@@ -134,13 +134,16 @@ export interface SnapHitResult {
 }
 
 export interface TerminalOptions {
-  theme?: string | undefined;
   storage?: StorageLike | AsyncStorageLike | null | undefined;
   storageKey?: string | undefined;
   persist?: boolean | string | undefined;
   defaultPreset?: string | undefined;
   /** Recreate panel instances before applying a saved document on startup. */
   createPanel?(id: string, info: SerializedPanelInfo): TerminalPanel;
+  /**
+   * Called (once per frame) after every layout change -- dock, float, close, tab, split
+   * ratio, link group -- whether or not the layout is persisted.
+   */
   onLayoutChange?(doc: TerminalDocument): void;
   onStorageError?(failure: WidgetStorageError): void;
   onRestoreError?(reason: string): void;
