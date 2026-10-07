@@ -65,6 +65,7 @@ export class TerminalDockController implements TerminalWorkspace {
   private _destroyed = false;
   private _restoring = false;
   private _pendingDocument: TerminalDocument | null = null;
+  private _reconcileTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly _pendingPanelStates = new Map<string, unknown>();
   private _applyingLink = false;
   private readonly _resizeFrame: FrameTask;
@@ -121,12 +122,19 @@ export class TerminalDockController implements TerminalWorkspace {
           this._pendingDocument = savedDoc;
           if (!Object.keys(savedDoc.panels).length) { this._pendingDocument = null; this.restoreLayout(savedDoc); return; }
           if (options.createPanel) {
-            const panels = Object.entries(savedDoc.panels).map(([id, info]) => {
-              const panel = options.createPanel!(id, info);
+            const panels: TerminalPanel[] = [];
+            for (const [id, info] of Object.entries(savedDoc.panels)) {
+              // A factory returns nothing for a panel this build no longer offers; the rest restore.
+              const panel = options.createPanel(id, info);
+              if (!panel) continue;
               if (panel.id !== id || panel.type !== info.type) throw new Error('Panel factory returned a different identity');
-              return panel;
-            });
-            if (!panels.length) { this._pendingDocument = null; this.restoreLayout(savedDoc); }
+              panels.push(panel);
+            }
+            const created = new Set(panels.map(panel => panel.id));
+            const available = created.size === Object.keys(savedDoc.panels).length
+              ? savedDoc : pruneDocument(savedDoc, id => created.has(id));
+            this._pendingDocument = available;
+            if (!panels.length) { this._pendingDocument = null; this.restoreLayout(available); }
             else for (const panel of panels) this.addPanel(panel);
           }
         }
@@ -189,9 +197,15 @@ export class TerminalDockController implements TerminalWorkspace {
 
     if (this._pendingDocument) {
       const doc = this._pendingDocument;
+      this.cancelReconcile();
       if (Object.keys(doc.panels).every(id => this._panels.has(id))) {
         this._pendingDocument = null;
-        this.restoreLayout(doc);
+        this.applyRestored(doc, false);
+      } else {
+        // A saved panel the application never registers again would hold the restore (and every
+        // later addPanel) forever: once the current task's registrations are done, restore
+        // what is registered and drop the rest.
+        this._reconcileTimer = setTimeout(() => { this._reconcileTimer = null; this.reconcilePending(); }, 0);
       }
       return;
     }
@@ -210,6 +224,49 @@ export class TerminalDockController implements TerminalWorkspace {
 
     this.render();
     this.saveState();
+  }
+
+  private cancelReconcile(): void {
+    if (this._reconcileTimer !== null) clearTimeout(this._reconcileTimer);
+    this._reconcileTimer = null;
+  }
+
+  /** Restore the saved panels that are registered; the saved IDs nobody registered are dropped. */
+  private reconcilePending(): void {
+    const doc = this._pendingDocument;
+    if (!doc || this._destroyed) return;
+    const missing = Object.keys(doc.panels).filter(id => !this._panels.has(id));
+    // Nothing registered yet: the next addPanel tries again.
+    if (missing.length === Object.keys(doc.panels).length) return;
+    this._pendingDocument = null;
+    this.reportRestoreError(`Saved panels are not registered and were dropped: ${missing.join(', ')}`);
+    this.applyRestored(pruneDocument(doc, id => this._panels.has(id)), true);
+  }
+
+  /**
+   * Apply a saved document whose panels are all registered, then place any panel registered
+   * meanwhile that the document does not mention (or every panel, if the document is refused).
+   */
+  private applyRestored(doc: TerminalDocument, changed: boolean): void {
+    const restored = this.restoreLayout(doc);
+    if (!restored) {
+      // Like an invalid document: the stored one stays untouched until explicitly cleared.
+      this._invalidSaved = true;
+      this.reportRestoreError('Saved terminal layout does not match the registered panels');
+    }
+    const placed = new Set([
+      ...(this._layout ? collectPanelIds(this._layout) : []),
+      ...this._floatingWindows.keys(),
+    ]);
+    let added = false;
+    for (const id of this._panels.keys()) {
+      if (placed.has(id)) continue;
+      this._layout = this._layout ? insertPanel(this._layout, id, this._layout.id, 'right')
+        : { type: 'panel', id: generateNodeId('panel'), panelId: id };
+      added = true;
+    }
+    if (added) this.render();
+    if (added || changed) this.saveState();
   }
 
   public removePanel(panelId: string): void {
@@ -971,6 +1028,7 @@ export class TerminalDockController implements TerminalWorkspace {
     this._doc.defaultView?.removeEventListener?.('pagehide', this._pageHide);
     this._doc.removeEventListener('visibilitychange', this._visibility);
     this._destroyed = true;
+    this.cancelReconcile();
     this._resizeFrame.cancel();
     this._resizeQueue.clear();
     this._lastSizes.clear();
@@ -1008,4 +1066,15 @@ export function createTerminalWorkspace(
   options: TerminalOptions = {}
 ): TerminalWorkspace {
   return new TerminalDockController(container, options);
+}
+
+/** The document without the panels `keep` rejects: their layout leaves, floating windows and records. */
+function pruneDocument(doc: TerminalDocument, keep: (id: string) => boolean): TerminalDocument {
+  let layout = doc.layout;
+  const panels: TerminalDocument['panels'] = {};
+  for (const [id, info] of Object.entries(doc.panels)) {
+    if (keep(id)) panels[id] = info;
+    else layout = removePanel(layout, id);
+  }
+  return { ...doc, layout, floating: doc.floating.filter(window => keep(window.panelId)), panels };
 }

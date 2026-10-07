@@ -283,14 +283,16 @@ export class StandaloneDomLadder {
   private paint(): void {
     if (this._destroyed) return;
     if (this._depthDirty) {
-      this._view.setRows(buildDomRows(this._depth, this._opts.tickSchedule ?? this._opts.tickSize ?? 0.05, this._groupBy));
+      const ticks = this._opts.tickSchedule ?? this._opts.tickSize ?? 0.05;
+      this._view.setTick(typeof ticks === 'number' ? ticks : ticks.minMove);
+      this._view.setRows(buildDomRows(this._depth, ticks, this._groupBy));
       this._depthDirty = false;
       const badge = this._el.querySelector('.oac-dom-tier-badge');
       if (badge) badge.textContent = this._depth ? ladderCapability(this._depth).toUpperCase() : 'NO DEPTH';
       const bid = this._depth?.bids.reduce((total, level) => total + level.qty, 0) ?? 0;
       const ask = this._depth?.asks.reduce((total, level) => total + level.qty, 0) ?? 0;
       const spread = this._depth?.bids[0] && this._depth.asks[0]
-        ? (this._depth.asks[0].price - this._depth.bids[0].price).toFixed(2) : '--';
+        ? this._view.formatPrice(this._depth.asks[0].price - this._depth.bids[0].price) : '--';
       this._summary.textContent = this._depth ? `Spread ${spread}  |  Bid ${bid}  Ask ${ask}`
         : 'Waiting for market depth';
     }

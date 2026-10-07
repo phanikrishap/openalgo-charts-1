@@ -138,8 +138,11 @@ export interface TerminalOptions {
   storageKey?: string | undefined;
   persist?: boolean | string | undefined;
   defaultPreset?: string | undefined;
-  /** Recreate panel instances before applying a saved document on startup. */
-  createPanel?(id: string, info: SerializedPanelInfo): TerminalPanel;
+  /**
+   * Recreate panel instances before applying a saved document on startup. Return nothing for a
+   * saved panel this application no longer offers: it is dropped and the rest restore.
+   */
+  createPanel?(id: string, info: SerializedPanelInfo): TerminalPanel | null | undefined;
   /**
    * Called (once per frame) after every layout change -- dock, float, close, tab, split
    * ratio, link group -- whether or not the layout is persisted.

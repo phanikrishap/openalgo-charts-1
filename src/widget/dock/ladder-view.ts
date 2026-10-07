@@ -15,6 +15,19 @@ interface RowElements {
   sell: HTMLButtonElement;
 }
 
+/**
+ * Decimal places that show every price on a grid of `step` (0.05 -> 2, 0.001 -> 3),
+ * never fewer than two, so distinct ticks never print as the same label.
+ */
+export function priceDecimals(step: number): number {
+  if (!Number.isFinite(step) || step <= 0) return 2;
+  for (let digits = 0; digits <= 10; digits++) {
+    const units = step * 10 ** digits;
+    if (Math.abs(units - Math.round(units)) <= 1e-9 * Math.max(1, units)) return Math.max(2, digits);
+  }
+  return 10;
+}
+
 function text(element: HTMLElement, value: string): void {
   if (element.textContent !== value) element.textContent = value;
 }
@@ -28,6 +41,7 @@ export class DomLadderView {
   private _visible = new Map<number, RowElements>();
   private _maxQty = 1;
   private _nearest = -1;
+  private _decimals = 2;
 
   constructor(private readonly _container: HTMLElement) {
     const doc = _container.ownerDocument;
@@ -69,6 +83,15 @@ export class DomLadderView {
     }
     this._rows = rows;
     this._maxQty = rows.reduce((max, row) => Math.max(max, row.bidQty, row.askQty), 1);
+  }
+
+  /** Format prices to the instrument's tick (or a schedule's finest grid). */
+  setTick(step: number): void {
+    this._decimals = priceDecimals(step);
+  }
+
+  formatPrice(price: number): string {
+    return price.toFixed(this._decimals);
   }
 
   setLtp(price: number | null): void {
@@ -158,7 +181,8 @@ export class DomLadderView {
     const price = String(row.price);
     elements.element.dataset.price = price;
     elements.element.classList.toggle('is-ltp', current);
-    text(elements.price, row.price.toFixed(2));
+    const label = this.formatPrice(row.price);
+    text(elements.price, label);
     text(elements.bid, row.bidQty ? String(row.bidQty) : '');
     text(elements.ask, row.askQty ? String(row.askQty) : '');
     for (const [bar, qty] of [[elements.bidBar, row.bidQty], [elements.askBar, row.askQty]] as const) {
@@ -166,9 +190,10 @@ export class DomLadderView {
       if (bar.style.width !== width) bar.style.width = width;
     }
     for (const button of [elements.buy, elements.sell]) {
-      if (button.dataset.price !== price) {
+      const title = `${button.dataset.side === 'buy' ? 'Buy' : 'Sell'} limit at ${label}`;
+      if (button.dataset.price !== price || button.title !== title) {
         button.dataset.price = price;
-        button.title = `${button.dataset.side === 'buy' ? 'Buy' : 'Sell'} limit at ${row.price.toFixed(2)}`;
+        button.title = title;
         button.setAttribute('aria-label', button.title);
       }
     }
