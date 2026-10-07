@@ -266,6 +266,18 @@ describe('floating windows', () => {
     expect(win.state).toMatchObject({ x: 0, y: 0 });
     win.destroy();
   });
+
+  it('opens inside the workspace when dropped at its far corner or restored from a larger screen', () => {
+    const container = fakeContainer(fakeWidgetDocument(), 800, 600);
+    const win = new FloatingPanelWindow({ panel: panel('f', 'custom'), container: container as unknown as HTMLElement, linkHub: new LinkHub(),
+      initialBounds: { x: 790, y: 590, width: 360, height: 300 }, onDock() {}, onClose() {}, onBoundsChange() {} });
+    expect(win.state).toMatchObject({ x: 440, y: 300 });
+    win.destroy();
+    const negative = new FloatingPanelWindow({ panel: panel('g', 'custom'), container: container as unknown as HTMLElement, linkHub: new LinkHub(),
+      initialBounds: { x: -50, y: -20, width: 360, height: 300 }, onDock() {}, onClose() {}, onBoundsChange() {} });
+    expect(negative.state).toMatchObject({ x: 0, y: 0 });
+    negative.destroy();
+  });
 });
 
 describe('terminal stylesheet', () => {

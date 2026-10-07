@@ -6,6 +6,14 @@
 import type { MarketDepth } from './types';
 import type { TickSchedule } from './tick-schedule';
 
+/**
+ * The public surface of a tick schedule. Structural on purpose: the trade tier
+ * names `TickSchedule` through the package entry and the dock through the
+ * source module, and a class with private members is only assignable to its
+ * own declaration -- the website build compiles both and saw two classes.
+ */
+type ScheduleLike = Pick<TickSchedule, 'round' | 'bands'>;
+
 export interface DepthRow {
   price: number;
   bidQty: number;
@@ -17,7 +25,7 @@ export interface DepthRow {
  * grouping the nearest multiple of `n` ticks of that price's band, kept inside
  * the band so the row is still a price a click can trade at.
  */
-function scheduleBucket(ticks: TickSchedule, n: number): (p: number) => number {
+function scheduleBucket(ticks: ScheduleLike, n: number): (p: number) => number {
   return (p) => {
     const price = ticks.round(p), { bands } = ticks;
     if (n === 1 || !Number.isFinite(price)) return price;
@@ -39,7 +47,7 @@ function scheduleBucket(ticks: TickSchedule, n: number): (p: number) => number {
  * because the website compiles the trade tier with strict null checks off, where
  * an inline null check does not narrow the union.
  */
-function isSchedule(tickSize: number | TickSchedule): tickSize is TickSchedule {
+function isSchedule(tickSize: number | ScheduleLike): tickSize is ScheduleLike {
   return typeof tickSize === 'object' && tickSize !== null;
 }
 
@@ -50,12 +58,12 @@ function isSchedule(tickSize: number | TickSchedule): tickSize is TickSchedule {
  * a fraction rounding down, because a fractional group would label rows between
  * the prices a band allows.
  */
-export function depthBucket(tickSize: number | TickSchedule, groupBy = 1): ((p: number) => number) | null {
+export function depthBucket(tickSize: number | ScheduleLike, groupBy = 1): ((p: number) => number) | null {
   if (!isSchedule(tickSize)) {
     const step = tickSize * Math.max(1, groupBy);
     return (p: number): number => Math.round(Math.round(p / step) * step * 1e8) / 1e8;
   }
-  if (typeof (tickSize as Partial<TickSchedule>).round !== 'function') return null;
+  if (typeof (tickSize as Partial<ScheduleLike>).round !== 'function') return null;
   return scheduleBucket(tickSize, groupBy > 1 ? Math.floor(groupBy) : 1);
 }
 

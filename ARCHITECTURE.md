@@ -30,7 +30,7 @@ notifications. Pipeline arrows show data flow, not package dependencies.
 
 ---
 
-The current terminal branch build, including unreleased docking and workspace recovery fixes, measures 137.56 kB base, 123.59 kB widget, 18.86 kB opt-in terminal tools and 441.22 kB for tier bundles plus terminal tools (decimal Brotli sizes).
+The current terminal branch build, including unreleased docking and workspace recovery fixes, measures 137.56 kB base, 123.69 kB widget, 18.88 kB opt-in terminal tools and 441.34 kB for tier bundles plus terminal tools (decimal Brotli sizes).
 
 ## Current integration map
 

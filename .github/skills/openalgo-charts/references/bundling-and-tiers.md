@@ -167,13 +167,13 @@ Enforced by `npm run size` (`size-limit`, Brotli, `@size-limit/file`), from `.si
 | Transform tier | `transform.mjs` | 6.07 kB | 6.07 kB |
 | Profile tier | `profile.mjs` | 14.94 kB | 14.94 kB |
 | WebGL2 tier | `webgl.mjs` | 6.97 kB | 6.97 kB |
-| Widget tier | `widget.mjs` | 123.65 kB | 123.59 kB |
-| Terminal tools | `widget.terminal-<hash>.mjs`, fetched by `loadTerminal()` | 18.91 kB | 18.86 kB |
+| Widget tier | `widget.mjs` | 123.74 kB | 123.69 kB |
+| Terminal tools | `widget.terminal-<hash>.mjs`, fetched by `loadTerminal()` | 18.91 kB | 18.88 kB |
 | Trading forms | `widget.trading-panels-<hash>.mjs`, fetched by `loadTradingPanels()` | 3.28 kB | 3.23 kB |
 | Widget first-use parts | `widget.<part>-<hash>.mjs`, seven files | 18.24 kB | 18.24 kB |
-| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` + `widget.terminal-<hash>.mjs` | 381.43 kB | 381.38 kB |
+| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` + `widget.terminal-<hash>.mjs` | 381.56 kB | 381.51 kB |
 | Workspace tier | `workspace.mjs` | 11.73 kB | 11.73 kB |
-| Everything | all nine bundles + terminal tools (shell parts measured separately) | 441.27 kB | 441.22 kB |
+| Everything | all nine bundles + terminal tools (shell parts measured separately) | 441.39 kB | 441.34 kB |
 | Script tags | the nine classic-script files | 450.43 kB | 450.38 kB |
 | Base classic script | `openalgo-charts.standalone.js` | 137.65 kB | 137.55 kB |
 | Widget classic script | `openalgo-charts.widget.standalone.js`, first-use parts inlined | 154.74 kB | 154.69 kB |

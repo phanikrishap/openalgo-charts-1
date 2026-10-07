@@ -58,6 +58,9 @@ export class FloatingPanelWindow {
       zIndex: typeof b.zIndex === 'number' ? b.zIndex : 50,
     };
 
+    // Opened inside the workspace as a drag keeps it: a drop at the far edge or a layout saved on
+    // a larger screen must not place the titlebar out of reach.
+    this.clampTo(b.x, b.y);
     this._el = this._doc.createElement('div');
     this._el.className = 'oac-dock-floating';
     this._el.style.left = `${this._state.x}px`;
@@ -137,6 +140,13 @@ export class FloatingPanelWindow {
     return { ...this._state };
   }
 
+  /** Moves to (x, y) kept inside the workspace (which clips overflow), so the titlebar stays reachable. */
+  private clampTo(x: number, y: number): void {
+    const { clientWidth: w, clientHeight: h } = this._opts.container, s = this._state;
+    s.x = Math.min(Math.max(0, x), w > 0 ? Math.max(0, w - s.width) : Infinity);
+    s.y = Math.min(Math.max(0, y), h > 0 ? Math.max(0, h - s.height) : Infinity);
+  }
+
   public bringToFront(topZIndex: number): void {
     this._state.zIndex = topZIndex;
     this._el.style.zIndex = String(topZIndex);
@@ -183,12 +193,7 @@ export class FloatingPanelWindow {
       const dx = e.clientX - this._dragStartX;
       const dy = e.clientY - this._dragStartY;
 
-      // Kept inside the workspace (which clips overflow) so the titlebar stays reachable.
-      const { clientWidth, clientHeight } = this._opts.container;
-      const maxX = clientWidth > 0 ? Math.max(0, clientWidth - this._state.width) : Infinity;
-      const maxY = clientHeight > 0 ? Math.max(0, clientHeight - this._state.height) : Infinity;
-      this._state.x = Math.min(Math.max(0, this._initialLeft + dx), maxX);
-      this._state.y = Math.min(Math.max(0, this._initialTop + dy), maxY);
+      this.clampTo(this._initialLeft + dx, this._initialTop + dy);
       this._el.style.left = `${this._state.x}px`;
       this._el.style.top = `${this._state.y}px`;
 
