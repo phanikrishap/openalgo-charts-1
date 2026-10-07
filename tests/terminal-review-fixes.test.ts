@@ -170,9 +170,31 @@ describe('workspace commands', () => {
   it('renders a missing panel\'s ID as text, never as markup', () => {
     const root = fakeContainer(fakeWidgetDocument());
     const workspace = createTerminalWorkspace(root as unknown as HTMLElement);
-    workspace.addPanel(panel('a'));
-    workspace.removePanel('a');
-    expect(root.querySelector('.oac-dom-empty')!.textContent).toBe('Workspace is empty. Add a panel to begin.');
+    // Every public layout path validates panel IDs, so an orphan leaf is planted directly.
+    const id = '<img src=x onerror="alert(1)">';
+    const internals = workspace as unknown as { _layout: unknown; render(): void };
+    internals._layout = { type: 'panel', id: 'orphan', panelId: id };
+    internals.render();
+    const empty = root.querySelector('.oac-dom-empty')!;
+    expect(empty.textContent).toBe(`Panel not found (${id})`);
+    expect(empty.innerHTML).toBe(`Panel not found (${id})`);
+    expect(empty.children).toHaveLength(0);
+    expect(root.querySelector('img')).toBeNull();
+    workspace.destroy();
+  });
+
+  it.each([[0.01, 0.05, '5'], [0.99, 0.95, '95']])('clamps a restored split ratio of %s to the divider bounds', (saved, ratio, now) => {
+    const root = fakeContainer(fakeWidgetDocument());
+    const workspace = createTerminalWorkspace(root as unknown as HTMLElement);
+    workspace.addPanel(panel('a')); workspace.addPanel(panel('b'), 'a', 'right');
+    expect(workspace.restoreLayout({ version: 1, floating: [], panels: { a: { type: 'chart', title: 'a' }, b: { type: 'chart', title: 'b' } },
+      layout: { type: 'split', id: 'root', direction: 'horizontal', ratio: saved, children: [
+        { type: 'panel', id: 'na', panelId: 'a' }, { type: 'panel', id: 'nb', panelId: 'b' }] } })).toBe(true);
+    expect(workspace.getLayout()).toMatchObject({ type: 'split', ratio });
+    const splitter = root.querySelector('.oac-dock-splitter')!;
+    expect(splitter.getAttribute('aria-valuenow')).toBe(now);
+    expect(Number(now)).toBeGreaterThanOrEqual(Number(splitter.getAttribute('aria-valuemin')));
+    expect(Number(now)).toBeLessThanOrEqual(Number(splitter.getAttribute('aria-valuemax')));
     workspace.destroy();
   });
 });
@@ -313,16 +335,29 @@ describe('panel adapters and trading drafts', () => {
     handle.destroy();
   });
 
-  it('announces and focuses the side a depth click prepared, without submitting', () => {
+  it('announces and focuses the side a depth click prepared, without submitting', async () => {
     const doc = fakeWidgetDocument(), host = fakeContainer(doc);
     const placeOrder = vi.fn(async () => ({ ok: true }));
     const ticket = createOrderTicketPanel({ id: 't', symbol: 'AAA', label: 'Paper', placeOrder,
       draft: { qty: 2, type: 'LIMIT', price: 99.5, side: 'SELL' } });
     const handle = ticket.mount(host as unknown as HTMLElement);
     expect(host.querySelector('[data-terminal-status]')!.textContent).toBe('Prepared to sell. Review, then press Sell.');
+    await Promise.resolve();
     const buttons = host.querySelectorAll('.oac-trading-actions button');
     expect(doc.activeElement).toBe(buttons[1]);
     expect(placeOrder).not.toHaveBeenCalled();
     handle.destroy();
+  });
+
+  it('focuses the prepared side of a ticket the workspace mounts before attaching its tree', async () => {
+    const doc = fakeWidgetDocument(), root = fakeContainer(doc);
+    const workspace = createTerminalWorkspace(root as unknown as HTMLElement);
+    workspace.addPanel(createOrderTicketPanel({ id: 't', symbol: 'AAA', label: 'Paper', placeOrder: async () => ({ ok: true }),
+      draft: { qty: 1, type: 'LIMIT', price: 99.5, side: 'BUY' } }));
+    await Promise.resolve();
+    const buttons = root.querySelectorAll('.oac-trading-actions button');
+    expect(buttons[0]!.isConnected).toBe(true);
+    expect(doc.activeElement).toBe(buttons[0]);
+    workspace.destroy();
   });
 });

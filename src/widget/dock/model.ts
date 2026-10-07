@@ -13,6 +13,11 @@ import type {
   DockTabsNode,
 } from './types';
 
+/** The share of a split its first pane may hold; a divider stops at these and a restore is clamped to them. */
+export const MIN_SPLIT_RATIO = 0.05;
+export const MAX_SPLIT_RATIO = 0.95;
+export const clampSplitRatio = (ratio: number): number => Math.max(MIN_SPLIT_RATIO, Math.min(MAX_SPLIT_RATIO, ratio));
+
 let nextId = 1;
 export function generateNodeId(prefix = 'dock_node'): string {
   return `${prefix}_${Date.now().toString(36)}_${(nextId++).toString(36)}`;
@@ -299,7 +304,7 @@ export function validateAndSanitizeTree(raw: unknown): DockNode | null {
   if (obj.type === 'split' && Array.isArray(obj.children) && obj.children.length >= 2) {
     const direction = obj.direction === 'vertical' ? 'vertical' : 'horizontal';
     const ratio = typeof obj.ratio === 'number' && Number.isFinite(obj.ratio)
-      ? Math.max(0.05, Math.min(0.95, obj.ratio))
+      ? clampSplitRatio(obj.ratio)
       : 0.5;
 
     const children: DockNode[] = [];

@@ -6,6 +6,7 @@
  */
 
 import { FrameTask } from './frame-task';
+import { MAX_SPLIT_RATIO, MIN_SPLIT_RATIO } from './model';
 
 export interface SplitterOptions {
   direction: 'horizontal' | 'vertical';
@@ -26,8 +27,8 @@ export class DockSplitter {
   private readonly _frame: FrameTask;
 
   /** The ratio bounds a drag and the arrow keys stop at; Home and End go to them. */
-  static readonly MIN_RATIO = 0.05;
-  static readonly MAX_RATIO = 0.95;
+  static readonly MIN_RATIO = MIN_SPLIT_RATIO;
+  static readonly MAX_RATIO = MAX_SPLIT_RATIO;
 
   constructor(opts: SplitterOptions) {
     this._opts = opts;

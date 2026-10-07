@@ -1,5 +1,6 @@
 import { isKnownInterval } from 'openalgo-charts';
 import { isPlainObject, hasOnlyDataProperties } from '../../helpers/validate';
+import { clampSplitRatio } from './model';
 import type { DockNode, TerminalDocument, SerializedPanelInfo } from './types';
 
 const TYPES = ['chart', 'dom', 'watchlist', 'orders', 'positions', 'news', 'data', 'objects', 'custom'];
@@ -106,7 +107,8 @@ export function parseTerminalDocument(raw: unknown): TerminalDocument | null {
       if (item.type !== 'split' || !Array.isArray(item.children) || item.children.length !== 2
         || !['horizontal', 'vertical'].includes(String(item.direction)) || typeof item.ratio !== 'number'
         || item.ratio <= 0 || item.ratio >= 1) return fail();
-      return { type: 'split', id: item.id, direction: item.direction as 'horizontal' | 'vertical', ratio: item.ratio, children: item.children.map(node) };
+      // Clamped to the divider's bounds, so a restored split never reports a value outside them.
+      return { type: 'split', id: item.id, direction: item.direction as 'horizontal' | 'vertical', ratio: clampSplitRatio(item.ratio), children: item.children.map(node) };
     };
     const layout = doc.layout === null ? null : node(doc.layout);
     if (doc.floating.length > MAX_PANELS) return null;

@@ -189,7 +189,9 @@ export function createOrderTicketPanel(options: OrderTicketOptions): TerminalPan
         const label = draftSide === 'BUY' ? text(options, 'buy', 'Buy') : text(options, 'sell', 'Sell');
         status.textContent = text(options, 'prepared', `Prepared to ${label.toLowerCase()}. Review, then press ${label}.`);
         root.dataset.draftSide = draftSide;
-        if (host.isConnected) buttons[draftSide === 'BUY' ? 0 : 1]?.focus();
+        // The workspace mounts into a detached host and attaches the tree after rendering it.
+        const prepared = buttons[draftSide === 'BUY' ? 0 : 1];
+        queueMicrotask(() => { if (!destroyed && prepared?.isConnected) prepared.focus(); });
       }
       return { onTitleChange(callback) { titleChange = callback; }, destroy() { destroyed = true; update = undefined; unsubscribe?.(); unsubscribeCapabilities?.(); removeTheme(); form.destroy(); root.remove(); } };
     },
