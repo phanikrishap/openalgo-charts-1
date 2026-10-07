@@ -400,7 +400,8 @@ avoids ever showing a control with nothing behind it.
 
 `loadTerminal()` loads docking and standalone depth tools on demand. Its
 `loadTradingPanels()` loader requests order tickets, order books and the existing
-watchlist adapter separately. See [Optional Terminal Workspace](terminal-workspace.md)
+watchlist adapter separately. Chart market data uses `DataFeed`; order entry uses
+the trade tier's `OrderFeed`, driven by `OrderEngine`. See [Optional Terminal Workspace](terminal-workspace.md)
 for chart-local controls, shared linking, asynchronous restoration and cleanup.
 These controls are optional for hosts that only need `createWidget`.
 

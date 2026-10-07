@@ -2,18 +2,23 @@ import { test, expect, type Page } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { cpus, platform, totalmem } from 'node:os';
 
+/** Every widget on the page has a chart canvas with painted candles (not merely one of them). */
 async function candlesPainted(page: Page): Promise<boolean> {
-  return page.evaluate(() => [...document.querySelectorAll<HTMLCanvasElement>('.oac-chart canvas')].some(canvas => {
-    const context = canvas.getContext('2d');
-    if (!context || !canvas.width || !canvas.height) return false;
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    let count = 0;
-    for (let index = 0; index < pixels.length; index += 4) {
-      if (pixels[index + 3] > 128 && Math.max(pixels[index], pixels[index + 1], pixels[index + 2])
-        - Math.min(pixels[index], pixels[index + 1], pixels[index + 2]) > 60) count++;
-    }
-    return count > 100;
-  }));
+  return page.evaluate(() => {
+    const widgets = [...document.querySelectorAll<HTMLElement>('.oac-widget')];
+    return widgets.length > 0 && widgets.every(widget =>
+      [...widget.querySelectorAll<HTMLCanvasElement>('.oac-chart canvas')].some(canvas => {
+        const context = canvas.getContext('2d');
+        if (!context || !canvas.width || !canvas.height) return false;
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index + 3] > 128 && Math.max(pixels[index], pixels[index + 1], pixels[index + 2])
+            - Math.min(pixels[index], pixels[index + 1], pixels[index + 2]) > 60) count++;
+        }
+        return count > 100;
+      }));
+  });
 }
 
 test('native demo keeps panels on clicks, applies presets and restores added panels', async ({ page }, info) => {

@@ -12,8 +12,13 @@ describe('dockview multi-chart terminal compatibility', () => {
     const el = fakeContainer(doc);
     const chart = createChart(el as unknown as HTMLElement);
 
-    expect(typeof chart.resize).toBe('function');
-    expect(() => chart.resize(800, 600)).not.toThrow();
+    const sizes: { width: number; height: number }[] = [];
+    chart.on('resize', size => { sizes.push({ width: size.width, height: size.height }); });
+    chart.resize(500, 400);
+    expect(sizes[sizes.length - 1]).toEqual({ width: 500, height: 400 });
+    // Larger than the 800x600 container: clamped to the container.
+    chart.resize(2000, 1500);
+    expect(sizes[sizes.length - 1]).toEqual({ width: 800, height: 600 });
 
     chart.destroy();
   });
@@ -32,9 +37,17 @@ describe('dockview multi-chart terminal compatibility', () => {
     widget.chart.on('symbol_change', (s: string) => {
       receivedSymbolChanges.push(s);
     });
+    // The widget bus names the same fact `symbol` (and `interval`).
+    const busSymbols: { symbol: string; exchange: string }[] = [];
+    const busIntervals: string[] = [];
+    widget.on('symbol', payload => { busSymbols.push(payload); });
+    widget.on('interval', ({ interval }) => { busIntervals.push(interval); });
 
     widget.setSymbol('BANKNIFTY');
-    expect(receivedSymbolChanges).toContain('BANKNIFTY');
+    expect(receivedSymbolChanges).toEqual(['BANKNIFTY']);
+    expect(busSymbols).toEqual([{ symbol: 'BANKNIFTY', exchange: widget.exchange() }]);
+    widget.setInterval('15m');
+    expect(busIntervals).toEqual(['15m']);
 
     widget.destroy();
   });

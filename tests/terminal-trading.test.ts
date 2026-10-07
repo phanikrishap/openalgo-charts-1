@@ -40,8 +40,13 @@ it('locks both directions while submitting and ignores a response after removal'
   buttons[0].click(); buttons[1].click(); buttons[0].click();
   expect(placeOrder).toHaveBeenCalledTimes(1);
   expect(buttons.every(button => button.disabled)).toBe(true);
-  handle.destroy(); finish({ ok: true }); await Promise.resolve();
+  const status = host.querySelector('[data-terminal-status]')!;
+  const before = status.textContent;
+  handle.destroy(); finish({ ok: true }); await Promise.resolve(); await Promise.resolve();
   expect(host.children).toHaveLength(0);
+  // The late response reaches neither the detached status line nor the buttons.
+  expect(status.textContent).toBe(before);
+  expect(buttons.every(button => button.disabled)).toBe(true);
 });
 
 it('sends bracket prices through the native bracket callback and never as two independent orders', async () => {

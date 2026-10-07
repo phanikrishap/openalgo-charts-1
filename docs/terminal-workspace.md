@@ -13,8 +13,9 @@ assuming the current registry version contains them.
 ## Create a docked chart and depth panel
 
 Give the host container a non-zero width and height, for example
-`<div id="workspace" style="height: 700px"></div>`. Supply your own `DataFeed` for
-chart history and live bars. Depth snapshots are a separate input.
+`<div id="workspace" style="height: 700px"></div>`. Chart market data (history and
+live bars) depends only on your `DataFeed`. Depth snapshots are a separate input. Order
+entry uses the trade tier's `OrderEngine`, which drives the broker's `OrderFeed`.
 
 ```ts
 import { loadTerminal } from 'openalgo-charts/widget';
@@ -104,6 +105,11 @@ Supply `createPanel(id, info)` to reconstruct saved panels with their original
 ID and type. Resolve feeds, account sources and callbacks from the current host,
 not from saved JSON. For an `orders` panel, distinguish a ticket from a book
 using its saved `state.kind`. Use `validatePanelState` for custom panel state.
+Return nothing from `createPanel` for a saved panel the application no longer
+offers; it is dropped and the rest restore. Without `createPanel`, register the
+saved panel IDs with `addPanel` after `await workspace.ready`, in the same task:
+when that task ends, the registered panels restore, and a saved ID that is still
+unregistered is dropped and reported through `onRestoreError`.
 
 Await `workspace.ready` before adding initial default panels. A restored empty
 workspace is also a user choice: do not replace it automatically with defaults.
@@ -142,13 +148,15 @@ The returned module provides these factories:
 | --- | --- |
 | `createOrderTicketPanel` | panel ID, symbol, exchange, visible account/mode label, order callbacks and optional account/capability sources |
 | `createOrdersPanel` | panel ID, label, authoritative order snapshot subscription and optional cancellation callback |
-| `createWatchlistDockPanel` | panel ID, existing `WidgetContext` and watchlist configuration |
+| `createWatchlistDockPanel` | panel ID, `context: () => WidgetContext` and watchlist configuration |
 
 Tickets reuse the widget form controls, theme tokens and translation callback.
 Supply `account`, `mode`, `capabilities` and `subscribeCapabilities` so account
 readiness and provider support can update the controls. Pass write callbacks
-through the host's `OrderEngine` or its authorized adapter. Labels and disabled
-buttons do not replace execution checks in the host.
+through the host's `OrderEngine` or its authorized adapter; the engine drives the
+trade tier's `OrderFeed`, the broker adapter that actually places orders. Chart
+history and live bars come from the chart's `DataFeed`, which never places orders.
+Labels and disabled buttons do not replace execution checks in the host.
 
 Native bracket entry needs `placeBracket` and a provider-specific
 `bracketSupport` check. The terminal does not implement synthetic OCO execution.

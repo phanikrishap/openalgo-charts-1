@@ -161,22 +161,22 @@ Enforced by `npm run size` (`size-limit`, Brotli, `@size-limit/file`), from `.si
 | Budget row | Files measured | Limit | Measured |
 |---|---|---|---|
 | Base engine | `openalgo-charts.mjs` | 137.57 kB | 137.56 kB |
-| Base + trade layer | base + `trade.mjs` | 154.44 kB | 154.44 kB |
+| Base + trade layer | base + `trade.mjs` | 154.52 kB | 154.47 kB |
 | Indicator tier | `indicators.mjs` | 43.02 kB | 43.02 kB |
 | Draw tier | `draw.mjs` | 58.36 kB | 58.36 kB |
 | Transform tier | `transform.mjs` | 6.07 kB | 6.07 kB |
 | Profile tier | `profile.mjs` | 14.94 kB | 14.94 kB |
 | WebGL2 tier | `webgl.mjs` | 6.97 kB | 6.97 kB |
-| Widget tier | `widget.mjs` | 123.65 kB | 123.57 kB |
-| Terminal tools | `widget.terminal-<hash>.mjs`, fetched by `loadTerminal()` | 17.45 kB | 17.40 kB |
-| Trading forms | `widget.trading-panels-<hash>.mjs`, fetched by `loadTradingPanels()` | 3.16 kB | 3.13 kB |
+| Widget tier | `widget.mjs` | 123.65 kB | 123.59 kB |
+| Terminal tools | `widget.terminal-<hash>.mjs`, fetched by `loadTerminal()` | 18.91 kB | 18.86 kB |
+| Trading forms | `widget.trading-panels-<hash>.mjs`, fetched by `loadTradingPanels()` | 3.28 kB | 3.23 kB |
 | Widget first-use parts | `widget.<part>-<hash>.mjs`, seven files | 18.24 kB | 18.24 kB |
-| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` + `widget.terminal-<hash>.mjs` | 379.95 kB | 379.90 kB |
+| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` + `widget.terminal-<hash>.mjs` | 381.43 kB | 381.38 kB |
 | Workspace tier | `workspace.mjs` | 11.73 kB | 11.73 kB |
-| Everything | all nine bundles + terminal tools (shell parts measured separately) | 439.66 kB | 439.61 kB |
-| Script tags | the nine classic-script files | 448.88 kB | 448.83 kB |
+| Everything | all nine bundles + terminal tools (shell parts measured separately) | 441.27 kB | 441.22 kB |
+| Script tags | the nine classic-script files | 450.43 kB | 450.38 kB |
 | Base classic script | `openalgo-charts.standalone.js` | 137.65 kB | 137.55 kB |
-| Widget classic script | `openalgo-charts.widget.standalone.js`, first-use parts inlined | 153.28 kB | 153.23 kB |
+| Widget classic script | `openalgo-charts.widget.standalone.js`, first-use parts inlined | 154.74 kB | 154.69 kB |
 
 Version 2.1.2 raises the full-package budget from 187 KB to 188 KB for the feed, indicator lifecycle and recovery fixes. Version 2.1.3 raises base, widget and widget-terminal ceilings to 68 KB, 37 KB and 157 KB for navigation controls, and the chart-only tree-shaking ceiling to 45 KiB. Version 2.1.6 raises the base, base-plus-trade, widget-terminal and total ceilings
 to 73 KB, 81 KB, 165 KB and 197 KB for shared loading, resilient caching and
@@ -313,4 +313,4 @@ Version 2.5.9 is the drawing interaction and replay release: drawings per instru
 
 Version 2.5.10 is the persistence, saved layouts and chart grid release: widget state in IndexedDB, saved layouts and indicator templates, the shortcuts editor, the bottom bar, market phases and session shading, the chart grid to sixteen charts with named link groups, link channels for the chart type and drawings, the chrome icon registry, marker lanes and the label pass. The measured base is 134.69 kB, base plus trade 151.38 kB, indicators 40.43 kB, draw 57.98 kB (the icon registry), profile 14.97 kB, widget 121.36 kB, workspace 11.53 kB (named link groups), the terminal 354.46 kB and all tiers 409.13 kB; the transform, WebGL2 and trade tiers are unchanged. The widget loads the UI a plain widget never opens from seven part files beside it, named by a content hash (`openalgo-charts.widget.<part>-<hash>.mjs`, 18.19 kB together), which a bundler emits as chunks of their own and a host serving `dist/` serves with the tier file from the same release. The chart-only import measures 85.73 KiB: the marker lanes run on every chart with text markers, and the session phases, the shading and the link channels shake out.
 
-Version 2.6.0 is the analysis depth and stricter API release: transforms applied in the chart with studies on the underlying bars, seven built-ins and a timeframe input on 29 of them, symbol search through the OpenAlgo feed, rich event details, the typed event map, a classic script for every tier and `require()` of the ESM files. The measured base is 137.53 kB, base plus trade 154.41 kB, indicators 43.02 kB, transform 6.07 kB, widget 123.65 kB, the terminal 362.48 kB, all tiers 419.05 kB and the nine classic scripts 430.90 kB; the eight tier scripts ship without source maps. The transform runs are installed by `registerSeriesTransform`, so a chart-only import that registers none leaves them out; it measures 87.19 KiB.
+Version 2.6.0 is the analysis depth and stricter API release: transforms applied in the chart with studies on the underlying bars, seven built-ins and a timeframe input on 29 of them, symbol search through the OpenAlgo feed, rich event details, the typed event map, a classic script for every tier and `require()` of the ESM files. The measured base is 137.53 kB, base plus trade 154.41 kB, indicators 43.02 kB, transform 6.07 kB, widget 123.57 kB, the terminal 362.48 kB, all tiers 419.05 kB and the nine classic scripts 430.90 kB; the eight tier scripts ship without source maps. The transform runs are installed by `registerSeriesTransform`, so a chart-only import that registers none leaves them out; it measures 87.19 KiB.

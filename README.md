@@ -189,7 +189,7 @@ Unused optional tiers stay out of the base chart download.
 | `openalgo-charts/widget` | `createWidget`: toolbar, bottom bar, Data, Objects, Watchlist and News dock, account summary, symbol search, dialogs, mobile controls, a shortcuts editor, saved layouts, the chart grid (`createChartGrid`) and optional persistence in IndexedDB | 123.57 kB |
 | `openalgo-charts/workspace` | Validated workspace and indicator-template documents, named watchlists, named catalogs with revision checks, asynchronous storage and an IndexedDB adapter; no DOM | 11.73 kB |
 
-The nine tier bundles plus terminal tools and optional trading forms total **439.61 kB Brotli**; a widget terminal with built-in indicators (base + draw + indicators + widget) is 379.90 kB, including the 17.40 kB terminal chunk fetched by `await loadTerminal()`. Trading forms add 3.13 kB when `loadTradingPanels()` is requested. Docking shares the grid's linking and asynchronous storage contracts. The [terminal soak report](benchmarks/terminal-soak-2026-10-07.md) records the sustained eight-chart/depth workload and its limits. The widget's seven first-use parts (the shortcuts editor, the Layouts menu, the templates list, the chart data dialog, the grid bar and its menus, and the IndexedDB store) add 18.24 kB in files of their own, fetched only when a widget first uses one. The nine classic-script files together are 448.83 kB. Figures are measured from the current terminal branch build, including unreleased fixes. The trade tier is 16.88 kB on its own; base + trade costs 154.44 kB. Sizes use decimal kB.
+The nine tier bundles plus terminal tools and optional trading forms total **441.22 kB Brotli**; a widget terminal with built-in indicators (base + draw + indicators + widget) is 381.38 kB, including the 18.86 kB terminal chunk fetched by `await loadTerminal()`. Trading forms add 3.23 kB when `loadTradingPanels()` is requested. Docking shares the grid's linking and asynchronous storage contracts. The [terminal soak report](benchmarks/terminal-soak-2026-10-07.md) records the sustained eight-chart/depth workload and its limits. The widget's seven first-use parts (the shortcuts editor, the Layouts menu, the templates list, the chart data dialog, the grid bar and its menus, and the IndexedDB store) add 18.24 kB in files of their own, fetched only when a widget first uses one. The nine classic-script files together are 450.38 kB. Figures are measured from the current terminal branch build, including unreleased fixes. The trade tier is 16.88 kB on its own; base + trade costs 154.47 kB. Sizes use decimal kB.
 
 ## What's built
 
@@ -528,7 +528,7 @@ Order forms are a further optional module: `const trading = await terminal.loadT
 
 The order book accepts authoritative snapshots and an optional cancel callback, reuses rows, coalesces rendering per frame and unsubscribes on close. The watchlist adapter mounts the existing named-list and quote UI using a supplied widget context; keep that context alive until the watchlist closes. These panels use the same docking, tabs, floating windows and layout persistence as charts. Tickets clear their prices and quantity when their instrument changes, block duplicate submissions and do not persist order drafts or submit on restoration. After an ambiguous outcome, check broker status before reopening the ticket.
 
-The terminal example has Depth, Trade and Watchlist buttons on each chart. Depth order buttons prepare a ticket; Buy or Sell submits to the explicitly labelled simulated broker. Its order book is session-only, while watchlists use IndexedDB when available. A live host supplies its own quote/depth feed and trading connection.
+The terminal example has Depth, Trade and Watchlist buttons on each chart. Depth order buttons prepare a ticket; Buy or Sell submits to the explicitly labelled simulated broker. Its order book is session-only, while watchlists use IndexedDB when available. A live host supplies chart market data through a `DataFeed` and depth snapshots separately; order entry goes through the trade tier's `OrderEngine`, which drives the broker's `OrderFeed`.
 
 ## Size budget
 
@@ -539,22 +539,22 @@ The table below measures the current terminal branch build, including the unrele
 | Bundle | Limit | Actual |
 |---|---|---|
 | Base engine | 137.57 kB | 137.56 kB |
-| Base + trade | 154.44 kB | 154.44 kB |
+| Base + trade | 154.52 kB | 154.47 kB |
 | Indicators tier | 43.02 kB | 43.02 kB |
 | Draw tier | 58.36 kB | 58.36 kB |
 | Transform tier | 6.07 kB | 6.07 kB |
 | Profile tier | 14.94 kB | 14.94 kB |
 | WebGL2 tier | 6.97 kB | 6.97 kB |
-| Widget tier | 123.65 kB | 123.57 kB |
+| Widget tier | 123.65 kB | 123.59 kB |
 | Widget first-use parts (seven files beside the widget tier) | 18.24 kB | 18.24 kB |
-| Terminal tools (fetched by `loadTerminal`) | 17.45 kB | 17.40 kB |
-| Trading forms (fetched by `loadTradingPanels`) | 3.16 kB | 3.13 kB |
-| Widget terminal (base + draw + indicators + widget + terminal tools) | 379.95 kB | 379.90 kB |
+| Terminal tools (fetched by `loadTerminal`) | 18.91 kB | 18.86 kB |
+| Trading forms (fetched by `loadTradingPanels`) | 3.28 kB | 3.23 kB |
+| Widget terminal (base + draw + indicators + widget + terminal tools) | 381.43 kB | 381.38 kB |
 | Workspace tier | 11.73 kB | 11.73 kB |
-| Script tags (the nine classic-script files) | 448.88 kB | 448.83 kB |
+| Script tags (the nine classic-script files) | 450.43 kB | 450.38 kB |
 | Base classic script | 137.65 kB | 137.55 kB |
-| Widget classic script | 153.28 kB | 153.23 kB |
-| **Tier bundles plus terminal tools** | 439.66 kB | 439.61 kB |
+| Widget classic script | 154.74 kB | 154.69 kB |
+| **Tier bundles plus terminal tools** | 441.27 kB | 441.22 kB |
 
 ## Documentation
 

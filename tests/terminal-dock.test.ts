@@ -346,7 +346,7 @@ describe('Workspace Layout Presets & Persistence (Phases 6 & 7)', () => {
 
     expect(restored).not.toBeNull();
     expect(restored?.layout?.type).toBe('panel');
-    expect(restored?.panels['chart_1']?.title).toBe('NIFTY (5m)');
+    expect(restored?.panels['chart_1']).toMatchObject({ title: 'NIFTY (5m)', state: { symbol: 'NIFTY', interval: '5m' } });
   });
 });
 
@@ -356,13 +356,14 @@ describe('Terminal Workspace Controller (Lifecycle & Integration)', () => {
     const container = doc.createElement('div');
     const ws = createTerminalWorkspace(container as unknown as HTMLElement);
 
+    const destroyChart = vi.fn(), destroyDom = vi.fn();
     const p1: TerminalPanel = {
       id: 'chart_1',
       type: 'chart',
       title: 'Chart 1',
       mount: (host) => {
         host.textContent = 'Chart 1 mounted';
-        return { destroy: vi.fn(), resize: vi.fn() };
+        return { destroy: destroyChart, resize: vi.fn() };
       },
     };
 
@@ -372,7 +373,7 @@ describe('Terminal Workspace Controller (Lifecycle & Integration)', () => {
       title: 'DOM 1',
       mount: (host) => {
         host.textContent = 'DOM 1 mounted';
-        return { destroy: vi.fn(), resize: vi.fn() };
+        return { destroy: destroyDom, resize: vi.fn() };
       },
     };
 
@@ -390,8 +391,12 @@ describe('Terminal Workspace Controller (Lifecycle & Integration)', () => {
     expect(ws.getLayout()?.type).toBe('tabs');
 
     ws.activateTab('chart_1');
+    expect(destroyChart).not.toHaveBeenCalled();
+    expect(destroyDom).not.toHaveBeenCalled();
 
     ws.destroy();
+    expect(destroyChart).toHaveBeenCalledOnce();
+    expect(destroyDom).toHaveBeenCalledOnce();
   });
 });
 
