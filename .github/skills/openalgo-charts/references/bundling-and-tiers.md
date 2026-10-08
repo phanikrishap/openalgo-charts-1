@@ -25,7 +25,7 @@ Source of truth: `package.json` (`exports`, `sideEffects`, `files`), `rollup.con
 | `openalgo-charts/indicators` | `dist/openalgo-charts.indicators.mjs` | 112 Tier-1 built-ins plus the Tier-2 contract | 43.02 kB / 43.02 kB | **yes**, registers all 112 descriptors |
 | `openalgo-charts/draw` | `dist/openalgo-charts.draw.mjs` | 87 drawing tools including Anchored VWAP and fixed-range Volume Profile, `DrawingController`, `DrawingLinkGroup`, `DrawingLayer` | 58.36 kB / 58.36 kB | **yes**, registers every built-in tool |
 | `openalgo-charts/webgl` | `dist/openalgo-charts.webgl.mjs` | the WebGL2 series backend, `createWebGL2Backend`, `isWebGL2Supported`, `WebGL2Backend`, `GlDevice` | 6.97 kB / 6.97 kB | **yes**, registers the `webgl2` render backend |
-| `openalgo-charts/widget` | `dist/openalgo-charts.widget.mjs` | `createWidget`, the chrome (top bar, rail, status line, toasts), the dialogs, event details, the keymap, the tokens and stylesheet; the only tier that ships DOM. Imports `openalgo-charts/draw` itself | 123.67 kB / 123.74 kB; first-use parts 18.24 kB / 18.24 kB; terminal tools 18.86 kB / 18.91 kB; trading forms 3.25 kB / 3.28 kB | **yes**, registers the seven dialog mounts with the shell |
+| `openalgo-charts/widget` | `dist/openalgo-charts.widget.mjs` | `createWidget`, the chrome (top bar, rail, status line, toasts), the dialogs, event details, the keymap, the tokens and stylesheet; the only tier that ships DOM. Imports `openalgo-charts/draw` itself | 123.70 kB / 123.74 kB; first-use parts 18.24 kB / 18.24 kB; terminal tools 18.86 kB / 18.91 kB; trading forms 3.25 kB / 3.28 kB | **yes**, registers the seven dialog mounts with the shell |
 | `openalgo-charts/workspace` | `dist/openalgo-charts.workspace.mjs` | Validated workspace and template documents, `WorkspaceRepository`, revision conflicts and an IndexedDB adapter | 11.73 kB / 11.73 kB | no |
 
 Types resolve per tier: `dist/index.d.ts`, `dist/trade/index.d.ts`, `dist/transform/index.d.ts`, `dist/profile/index.d.ts`, `dist/indicators/index.d.ts`, `dist/draw/index.d.ts`, `dist/webgl/index.d.ts`, `dist/widget/index.d.ts`, `dist/workspace/index.d.ts`.
@@ -167,13 +167,13 @@ Enforced by `npm run size` (`size-limit`, Brotli, `@size-limit/file`), from `.si
 | Transform tier | `transform.mjs` | 6.07 kB | 6.07 kB |
 | Profile tier | `profile.mjs` | 14.94 kB | 14.94 kB |
 | WebGL2 tier | `webgl.mjs` | 6.97 kB | 6.97 kB |
-| Widget tier | `widget.mjs` | 123.74 kB | 123.67 kB |
+| Widget tier | `widget.mjs` | 123.74 kB | 123.70 kB |
 | Terminal tools | `widget.terminal-<hash>.mjs`, fetched by `loadTerminal()` | 18.91 kB | 18.86 kB |
 | Trading forms | `widget.trading-panels-<hash>.mjs`, fetched by `loadTradingPanels()` | 3.28 kB | 3.25 kB |
 | Widget first-use parts | `widget.<part>-<hash>.mjs`, seven files | 18.24 kB | 18.24 kB |
-| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` + `widget.terminal-<hash>.mjs` | 381.56 kB | 381.46 kB |
+| Widget terminal | base + `draw.mjs` + `indicators.mjs` + `widget.mjs` + `widget.terminal-<hash>.mjs` | 381.56 kB | 381.50 kB |
 | Workspace tier | `workspace.mjs` | 11.73 kB | 11.73 kB |
-| Everything | all nine bundles + terminal tools + trading forms (shell parts measured separately) | 441.39 kB | 441.31 kB |
+| Everything | all nine bundles + terminal tools + trading forms (shell parts measured separately) | 441.39 kB | 441.35 kB |
 | Script tags | the nine classic-script files | 450.43 kB | 450.40 kB |
 | Base classic script | `openalgo-charts.standalone.js` | 137.65 kB | 137.55 kB |
 | Widget classic script | `openalgo-charts.widget.standalone.js`, first-use parts inlined | 154.74 kB | 154.71 kB |
